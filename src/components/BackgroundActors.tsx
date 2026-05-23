@@ -76,11 +76,6 @@ function ActorPortrait({ actor, scrollYProgress, index }: { actor: any, scrollYP
     [actor.rotateX * 3, 0]
   );
 
-  const blur = useTransform(scrollYProgress,
-    [scrollStart, scrollStart + 0.05, scrollStart + 0.1],
-    ['blur(40px)', 'blur(0px)', 'blur(20px)']
-  );
-
   const zIndex = useTransform(scrollYProgress,
     [scrollStart, scrollStart + 0.1],
     [0, 500]
@@ -99,9 +94,9 @@ function ActorPortrait({ actor, scrollYProgress, index }: { actor: any, scrollYP
         rotate: actor.rotate,
         rotateY: rotateY,
         rotateX: rotateX,
-        filter: blur,
         zIndex: zIndex,
-        transformStyle: "preserve-3d"
+        transformStyle: "preserve-3d",
+        willChange: "transform, opacity"
       }}
       className="w-64 md:w-96 aspect-[2/3] contrast-[1.1] saturate-[1.2] group"
     >

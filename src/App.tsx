@@ -158,30 +158,31 @@ export default function App() {
                   key={activeNav}
                   initial={{ 
                     opacity: 0, 
-                    scale: 0.94, 
-                    rotateX: 10,
-                    z: -150,
-                    filter: 'blur(15px)' 
+                    scale: 0.96, 
+                    rotateX: 8,
+                    z: -120,
                   }}
                   animate={{ 
                     opacity: 1, 
                     scale: 1, 
                     rotateX: 0,
                     z: 0,
-                    filter: 'blur(0px)' 
                   }}
                   exit={{ 
                     opacity: 0, 
-                    scale: 1.06, 
-                    rotateX: -10,
-                    z: 150,
-                    filter: 'blur(20px)' 
+                    scale: 1.04, 
+                    rotateX: -8,
+                    z: 120,
                   }}
                   transition={{ 
-                    duration: 1.0, 
+                    duration: 0.8, 
                     ease: [0.16, 1, 0.3, 1] 
                   }}
-                  style={{ transformStyle: 'preserve-3d', perspective: '1200px' }}
+                  style={{ 
+                    transformStyle: 'preserve-3d', 
+                    perspective: '1200px',
+                    willChange: 'transform, opacity'
+                  }}
                 >
                   {activeNav === 'casting' && <CastingBoard />}
                   {activeNav === 'dashboard' && <FashionHub />}

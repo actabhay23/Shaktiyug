@@ -21,6 +21,41 @@ function getGemini(): GoogleGenAI {
   return aiClient;
 }
 
+const GMAIL_OUTBOX_FILE = path.join(process.cwd(), "gmail_outbox.json");
+function sendGmailAlert(subject: string, details: any) {
+  try {
+    let outbox: any[] = [];
+    if (fs.existsSync(GMAIL_OUTBOX_FILE)) {
+      outbox = JSON.parse(fs.readFileSync(GMAIL_OUTBOX_FILE, "utf-8"));
+    }
+    const newMail = {
+      id: "mail-" + Date.now().toString(),
+      to: "shaktiyugfashionteam@gmail.com",
+      subject,
+      timestamp: new Date().toLocaleString(),
+      details
+    };
+    outbox.unshift(newMail);
+    fs.writeFileSync(GMAIL_OUTBOX_FILE, JSON.stringify(outbox, null, 2));
+    
+    console.log(`
+========================================================================
+[AUTOMATIC GMAIL OUTBOX DISPATCH] -> shaktiyugfashionteam@gmail.com
+========================================================================
+ID: ${newMail.id}
+Subject: ${subject}
+Date: ${newMail.timestamp}
+Recipient: shaktiyugfashionteam@gmail.com
+------------------------------------------------------------------------
+Details:
+${JSON.stringify(details, null, 2)}
+========================================================================
+    `);
+  } catch (e) {
+    console.error("Failed to automatically dispatch notification email to shaktiyugfashionteam@gmail.com", e);
+  }
+}
+
 const app = express();
 const PORT = 3000;
 
@@ -456,6 +491,15 @@ app.post("/api/feedback", (req, res) => {
     timestamp: new Date().toLocaleString()
   };
   writeFeedback(newFb);
+  sendGmailAlert("New Feedback Submitted", {
+    type: "user_feedback",
+    id: newFb.id,
+    name: newFb.name,
+    rating: newFb.rating,
+    comment: newFb.comment,
+    reaction: newFb.reaction,
+    timestamp: newFb.timestamp
+  });
   res.json({ success: true, feedback: newFb });
 });
 
@@ -483,6 +527,17 @@ app.post("/api/audition", (req, res) => {
   };
   list.unshift(newAud);
   writeAuditions(list);
+  sendGmailAlert(`New Audition / Casting Application - ${newAud.name}`, {
+    type: "audition_application",
+    id: newAud.id,
+    name: newAud.name,
+    role: newAud.role,
+    email: newAud.email,
+    portfolio: newAud.portfolio,
+    essence: newAud.essence,
+    videoUrl: newAud.videoUrl,
+    skills: newAud.skills
+  });
   res.json({ success: true, audition: newAud });
 });
 
@@ -550,6 +605,19 @@ app.post("/api/designs", (req, res) => {
 
   list.unshift(newDesign);
   writeDesigns(list);
+  sendGmailAlert(`New Couture Design Proposal - ${newDesign.title}`, {
+    type: "design_proposal",
+    id: newDesign.id,
+    title: newDesign.title,
+    designer: newDesign.designer,
+    category: newDesign.category,
+    description: newDesign.description,
+    image: newDesign.image,
+    tags: newDesign.tags,
+    visibility: newDesign.visibility,
+    aiEnhanced: newDesign.aiEnhanced,
+    timestamp: newDesign.timestamp
+  });
   res.json({ success: true, design: newDesign });
 });
 
@@ -652,6 +720,15 @@ app.post("/api/events/:id/register", (req, res) => {
     event.models = event.models || [];
     event.models.push(newReg);
     writeEvents(list);
+    sendGmailAlert(`New Runway Registration - ${event.name}`, {
+      type: "event_registration",
+      eventId: event.id,
+      collegeName: event.collegeName,
+      eventName: event.name,
+      registrantName: name,
+      registrantEmail: email,
+      registrantRole: role
+    });
     return res.json({ success: true, models: event.models });
   }
   res.status(404).json({ error: "Event not found" });
@@ -719,6 +796,17 @@ app.post("/api/owner/tickets", (req, res) => {
   };
   list.unshift(newTicket);
   writeTickets(list);
+  sendGmailAlert(`New Support Ticket / Creator Inquiry - ${newTicket.subject}`, {
+    type: "support_ticket",
+    id: newTicket.id,
+    user: newTicket.user,
+    email: newTicket.email,
+    subject: newTicket.subject,
+    message: newTicket.message,
+    priority: newTicket.priority,
+    category: newTicket.category,
+    timestamp: newTicket.timestamp
+  });
   res.json({ success: true, ticket: newTicket });
 });
 
