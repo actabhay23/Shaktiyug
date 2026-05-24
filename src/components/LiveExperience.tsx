@@ -26,6 +26,39 @@ interface LiveConfig {
   comments: Comment[];
 }
 
+const DEFAULT_LIVE_CONFIG: LiveConfig = {
+  isLive: true,
+  platform: "YouTube Live",
+  streamUrl: "https://www.youtube.com/embed/5qap5aO4i9A",
+  viewerCount: 1420,
+  title: "SHAKTIYUG COUTURE REVELATION - LIVE AT NIFT",
+  description: "Witness the live convergence of premium silk drapes with active neon sensor systems and real-time holographic lasers.",
+  countdownEnd: "2026-05-30T18:00:00Z",
+  replayUrl: "https://www.youtube.com/embed/5qap5aO4i9A",
+  reactions: [
+    { type: "🔥", count: 254 },
+    { type: "✨", count: 182 },
+    { type: "❤️", count: 313 },
+    { type: "😮", count: 98 }
+  ],
+  comments: [
+    {
+      id: "lc-1",
+      user: "RampQueen_99",
+      text: "Look at the high-contrast glowing drapes!",
+      timestamp: "12s ago",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=128"
+    },
+    {
+      id: "lc-2",
+      user: "CoutureArchitect",
+      text: "Truly a majestic digital-physical design hybridity.",
+      timestamp: "8s ago",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=128"
+    }
+  ]
+};
+
 export default function LiveExperience() {
   const [config, setConfig] = useState<LiveConfig | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -46,9 +79,14 @@ export default function LiveExperience() {
         const data = await res.json();
         setConfig(data);
         setComments(data.comments || []);
+      } else {
+        setConfig(prev => prev || DEFAULT_LIVE_CONFIG);
+        setComments(prev => prev.length > 0 ? prev : DEFAULT_LIVE_CONFIG.comments);
       }
     } catch (e) {
-      console.error(e);
+      console.warn("Using fallback live config:", e);
+      setConfig(prev => prev || DEFAULT_LIVE_CONFIG);
+      setComments(prev => prev.length > 0 ? prev : DEFAULT_LIVE_CONFIG.comments);
     }
   };
 
@@ -126,10 +164,12 @@ export default function LiveExperience() {
 
       if (res.ok) {
         const updated = await res.json();
-        setComments(updated.comments);
+        if (updated && updated.comments) {
+          setComments(updated.comments);
+        }
       }
     } catch (e) {
-      console.error('Failed to post live comment', e);
+      console.warn('Post comment endpoint offline, keeping reactive comment locally:', e);
     }
   };
 

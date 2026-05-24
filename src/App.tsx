@@ -95,7 +95,8 @@ export default function App() {
           }
         }
       } catch (e) {
-        console.error(e);
+        // Quietly handle static hosting where the Express API is not present
+        console.debug("Live stream check: Server offline or running client-only mode.");
       }
     };
 
@@ -126,7 +127,7 @@ export default function App() {
             transition={{ duration: 1 }}
             className="relative"
           >
-            <BackgroundEffect />
+            <BackgroundEffect active={!isTransitioning} />
             <BackgroundActors />
             <Navbar 
               active={activeNav} 

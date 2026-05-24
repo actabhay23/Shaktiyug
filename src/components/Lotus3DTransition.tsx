@@ -352,6 +352,141 @@ function OptimizedQuantumAura({ bloomProgress, count = 180 }: { bloomProgress: n
   );
 }
 
+// Energetic high-fashion golden-to-pink 3D particle burst
+function EnergyParticleBurst({ active }: { active: boolean }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const count = 280; // High-density premium look but fast
+
+  // Keep track of velocities and times for each particle
+  const particles = useMemo(() => {
+    const data = [];
+    for (let i = 0; i < count; i++) {
+      // Golden ratio or spherical distribution of directions
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      
+      const speed = 2.0 + Math.random() * 6.0; // Dynamic high-speed burst
+      
+      data.push({
+        dirX: Math.sin(phi) * Math.cos(theta),
+        dirY: Math.sin(phi) * Math.sin(theta) * 0.4 + 0.3, // gently tilted upwards like a fountain
+        dirZ: Math.cos(phi),
+        speed,
+        decay: 0.92 + Math.random() * 0.05 // elegant deceleration drag coefficient
+      });
+    }
+    return data;
+  }, []);
+
+  const geom = useMemo(() => {
+    const buffer = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    
+    // Initial position centered at lotus hub
+    for (let i = 0; i < count * 3; i++) {
+      positions[i] = 0;
+    }
+    
+    buffer.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    buffer.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    return buffer;
+  }, []);
+
+  // Use a ref to track burst duration
+  const burstTimeRef = useRef(0);
+
+  useFrame((state, delta) => {
+    if (!pointsRef.current) return;
+    
+    if (!active) {
+      // Hidden or static at start
+      burstTimeRef.current = 0;
+      const posAttr = geom.attributes.position as THREE.BufferAttribute;
+      const colAttr = geom.attributes.color as THREE.BufferAttribute;
+      for (let i = 0; i < count; i++) {
+        posAttr.setXYZ(i, 0, 0, 0);
+        colAttr.setXYZ(i, 0, 0, 0);
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+      if (pointsRef.current.material) {
+        (pointsRef.current.material as THREE.PointsMaterial).opacity = 0;
+      }
+      return;
+    }
+
+    // Accumulate time when active
+    burstTimeRef.current += delta;
+    const t = burstTimeRef.current;
+    
+    const posAttr = geom.attributes.position as THREE.BufferAttribute;
+    const colAttr = geom.attributes.color as THREE.BufferAttribute;
+    
+    // Elite gold to ruby pink colors
+    const colorGold = new THREE.Color("#F9E79F");
+    const colorPink = new THREE.Color("#E0115F");
+    const colorWhite = new THREE.Color("#FFFFFF");
+
+    for (let i = 0; i < count; i++) {
+      const p = particles[i];
+      
+      // Apply beautiful exponential friction decay to the burst
+      const currentSpeed = p.speed * Math.pow(p.decay, t * 45);
+      
+      let x = posAttr.getX(i) + p.dirX * currentSpeed * delta * 2.5;
+      let y = posAttr.getY(i) + p.dirY * currentSpeed * delta * 2.5;
+      let z = posAttr.getZ(i) + p.dirZ * currentSpeed * delta * 2.5;
+      
+      // Add a subtle swirling cosmic twist
+      const swirlFactor = 1.2 / (0.1 + t);
+      const angle = swirlFactor * delta;
+      const rotatedX = x * Math.cos(angle) - z * Math.sin(angle);
+      const rotatedZ = x * Math.sin(angle) + z * Math.cos(angle);
+      x = rotatedX;
+      z = rotatedZ;
+
+      posAttr.setXYZ(i, x, y, z);
+
+      // Interpolate colors: White -> Gold -> Ruby Pink -> Deep Magenta
+      const interpolationFactor = Math.min(t * 1.8, 1);
+      const finalCol = new THREE.Color();
+      if (interpolationFactor < 0.25) {
+        finalCol.lerpColors(colorWhite, colorGold, interpolationFactor / 0.25);
+      } else {
+        finalCol.lerpColors(colorGold, colorPink, (interpolationFactor - 0.25) / 0.75);
+      }
+
+      colAttr.setXYZ(i, finalCol.r, finalCol.g, finalCol.b);
+    }
+    
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+    
+    if (pointsRef.current.material) {
+      // Graceful fadeout over lifetime
+      const opacity = Math.max(0, 1 - (t / 1.4));
+      (pointsRef.current.material as THREE.PointsMaterial).opacity = opacity * 0.95;
+    }
+    
+    // Scale up slightly over time
+    pointsRef.current.scale.setScalar(1 + t * 0.4);
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geom}>
+      <pointsMaterial
+        size={0.075}
+        vertexColors
+        transparent
+        opacity={0}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </points>
+  );
+}
+
 // Camera Sweep rig
 function CameraRigAndLights({ bloomProgress }: { bloomProgress: number }) {
   const { camera } = useThree();
@@ -602,6 +737,9 @@ export default function Lotus3DTransition({ onBloomComplete, onTransitionEnd, de
 
             {/* 0% CPU heavy load particle swirler */}
             <OptimizedQuantumAura count={180} bloomProgress={bloomProgress} />
+
+            {/* Energetic high-fashion golden-to-pink particle burst layer */}
+            <EnergyParticleBurst active={bloomProgress > 0.88 || phase === 'whiteout' || phase === 'reveal'} />
 
             {/* Ring 1 - Outer Ruby Lacquer group */}
             {outerPetals.map((petal, i) => (

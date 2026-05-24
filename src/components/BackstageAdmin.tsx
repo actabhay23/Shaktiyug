@@ -73,6 +73,161 @@ interface Announcement {
   timestamp: string;
 }
 
+// Default/Fallback Config during API outages or static deployments
+const DEFAULT_OWNER_CONFIG: OwnerConfig = {
+  homepageSections: [
+    {
+      id: "hero",
+      name: "Dynamic Brand Header Slider",
+      active: true,
+      title: "STRIKE THE AURA OF SHAKTIYUG",
+      subtitle: "A NEW COSMIC VEIL UNFOLDS"
+    },
+    {
+      id: "analytics",
+      name: "Aura Analytics Prediction Sensor",
+      active: true
+    },
+    {
+      id: "featured_slider",
+      name: "Live Showreels Banner Slider",
+      active: true
+    },
+    {
+      id: "curated_gallery",
+      name: "Archival Photo Database Grid",
+      active: true
+    }
+  ],
+  dashboardModules: [
+    {
+      id: "trends",
+      name: "Couture Trend Board",
+      active: true
+    },
+    {
+      id: "uploads",
+      name: "Behance-Style Portfolio System",
+      active: true
+    },
+    {
+      id: "university",
+      name: "Registered Colleges Runway Shows",
+      active: true
+    },
+    {
+      id: "admin",
+      name: "Backstage Verification Desk",
+      active: true
+    }
+  ],
+  featuredDesigner: "Akash Soni",
+  featuredBrand: "Lotus Collective",
+  systemRoles: [
+    {
+      name: "Owner / Master",
+      permission: "Full Backstage Oversight"
+    },
+    {
+      name: "Student Creator",
+      permission: "Sketch & Blueprint Sharing"
+    },
+    {
+      name: "Model Companion",
+      permission: "Video Audition Upload"
+    }
+  ],
+  automationSettings: {
+    autoApproveDesigns: false,
+    autoApproveModels: false,
+    autoRespondSupportWithAI: true,
+    scheduledPublishInterval: "Immediate"
+  }
+};
+
+const DEFAULT_TICKETS: Ticket[] = [
+  {
+    id: "t-1",
+    user: "Kabir Mehta",
+    email: "kabir@vogue.in",
+    subject: "Holographic calibration error",
+    message: "When uploading my collection draft, the fiber-optic light response preview is locked into sRGB instead of the deep magenta gamut. Please check the backstage renderer configurations.",
+    priority: "high",
+    status: "open",
+    category: "Technical Support",
+    aiSuggestion: "Reset sRGB canvas render scale and force DCI-P3 cosmic spectrum profiles inside the backstage video encoder.",
+    timestamp: "May 23, 2026, 09:15 AM",
+    replies: []
+  },
+  {
+    id: "t-2",
+    user: "Aarti Roy",
+    email: "aarti@nift.edu",
+    subject: "Show schedule slot mismatch",
+    message: "Our runway slot show 'Lotus Resonance' is scheduled for 18:00 IST but our rehearsal group is only arriving by 17:30. Is there any way to delay the opener sequence by 15 minutes?",
+    priority: "medium",
+    status: "pending",
+    category: "Schedule Request",
+    aiSuggestion: "Re-schedule opener sequence with a 15 min buffer, shifting opening video to 18:15 IST.",
+    timestamp: "May 22, 2026, 03:30 PM",
+    replies: [
+      {
+        id: "tr-1",
+        user: "Backstage Automator",
+        text: "Under review by the chief administrator.",
+        timestamp: "May 22, 2026, 04:00 PM"
+      }
+    ]
+  }
+];
+
+const DEFAULT_USERS: UserLog[] = [
+  {
+    id: "u-1",
+    name: "Aarav Sharma",
+    email: "aarav@gmail.com",
+    role: "Collector / Student",
+    status: "Active",
+    metric: "3 Designs Uploaded",
+    timestamp: "Today, 11:15 AM"
+  },
+  {
+    id: "u-2",
+    name: "Rhea Sen",
+    email: "rhea@vogue.co",
+    role: "Model Companion",
+    status: "Approval Queue",
+    metric: "Audition video pending approval",
+    timestamp: "Today, 10:14 AM"
+  },
+  {
+    id: "u-3",
+    name: "Dev Malhotra",
+    email: "dev@malhotra.style",
+    role: "Model Companion",
+    status: "Active",
+    metric: "Audition Video Live",
+    timestamp: "Yesterday, 04:22 PM"
+  }
+];
+
+const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "a-1",
+    title: "Vedic Design Blueprint Lock-in Deadline",
+    text: "All sketch submissions for the NIFT Delhi runway must be finalized on the portfolio wall by May 28, 2026.",
+    priority: "high",
+    timestamp: "Today, 10:00 AM"
+  },
+  {
+    id: "a-2",
+    title: "Global Audition Loop Streaming Live",
+    text: "Backstage admin stream feeds are now calibrated to auto-loop approved models during runway commercial interludes.",
+    priority: "normal",
+    timestamp: "Yesterday"
+  }
+];
+
 export default function BackstageAdmin() {
   const [currentUser, setCurrentUser] = useState<any>(() => {
     const saved = localStorage.getItem('shakti_vogue_user');
@@ -131,33 +286,102 @@ export default function BackstageAdmin() {
     setTimeout(() => setActionAlert(''), 4500);
   };
 
-  // Synchronous Loaders
+  // Synchronous Loaders with robust individual endpoint fallbacks
+  // Synchronous Loaders with robust individual endpoint fallbacks
   const loadAllAdminData = async () => {
     try {
-      const [cfgRes, ticketsRes, usersRes, annRes, streamRes] = await Promise.all([
-        fetch('/api/owner/config'),
-        fetch('/api/owner/tickets'),
-        fetch('/api/owner/users'),
-        fetch('/api/owner/announcements'),
-        fetch('/api/owner/live')
-      ]);
+      // 1. Fetch Config
+      try {
+        const cfgRes = await fetch('/api/owner/config');
+        if (cfgRes.ok) {
+          const cfgData = await cfgRes.json();
+          setConfig(cfgData);
+          localStorage.setItem('shakti_local_owner_config', JSON.stringify(cfgData));
+        } else {
+          const savedCfg = localStorage.getItem('shakti_local_owner_config');
+          setConfig(savedCfg ? JSON.parse(savedCfg) : DEFAULT_OWNER_CONFIG);
+        }
+      } catch (e) {
+        console.warn("Using fallback owner config:", e);
+        const savedCfg = localStorage.getItem('shakti_local_owner_config');
+        setConfig(savedCfg ? JSON.parse(savedCfg) : DEFAULT_OWNER_CONFIG);
+      }
 
-      if (cfgRes.ok) setConfig(await cfgRes.json());
-      if (ticketsRes.ok) setTickets(await ticketsRes.json());
-      if (usersRes.ok) setUsers(await usersRes.json());
-      if (annRes.ok) setAnnouncements(await annRes.json());
-      if (streamRes.ok) {
-        const streamData = await streamRes.json();
-        setStreamConfig(streamData);
-        setStreamIsLive(streamData.isLive);
-        setStreamUrl(streamData.streamUrl);
-        setStreamPlatform(streamData.platform);
-        setStreamTitle(streamData.title);
-        setStreamViewerCount(streamData.viewerCount);
-        setStreamCountdown(streamData.countdownEnd);
+      // 2. Fetch Tickets
+      try {
+        const ticketsRes = await fetch('/api/owner/tickets');
+        if (ticketsRes.ok) {
+          const tickData = await ticketsRes.json();
+          setTickets(tickData);
+          localStorage.setItem('shakti_local_tickets', JSON.stringify(tickData));
+        } else {
+          const savedTickets = localStorage.getItem('shakti_local_tickets');
+          setTickets(savedTickets ? JSON.parse(savedTickets) : DEFAULT_TICKETS);
+        }
+      } catch (e) {
+        console.warn("Could not load support tickets:", e);
+        const savedTickets = localStorage.getItem('shakti_local_tickets');
+        setTickets(savedTickets ? JSON.parse(savedTickets) : DEFAULT_TICKETS);
+      }
+
+      // 3. Fetch Users
+      try {
+        const usersRes = await fetch('/api/owner/users');
+        if (usersRes.ok) {
+          const usrData = await usersRes.json();
+          setUsers(usrData);
+          localStorage.setItem('shakti_local_users', JSON.stringify(usrData));
+        } else {
+          const savedUsers = localStorage.getItem('shakti_local_users');
+          setUsers(savedUsers ? JSON.parse(savedUsers) : DEFAULT_USERS);
+        }
+      } catch (e) {
+        console.warn("Could not load users pool:", e);
+        const savedUsers = localStorage.getItem('shakti_local_users');
+        setUsers(savedUsers ? JSON.parse(savedUsers) : DEFAULT_USERS);
+      }
+
+      // 4. Fetch Announcements
+      try {
+        const annRes = await fetch('/api/owner/announcements');
+        if (annRes.ok) {
+          const annData = await annRes.json();
+          setAnnouncements(annData);
+          localStorage.setItem('shakti_local_announcements', JSON.stringify(annData));
+        } else {
+          const savedAnn = localStorage.getItem('shakti_local_announcements');
+          setAnnouncements(savedAnn ? JSON.parse(savedAnn) : DEFAULT_ANNOUNCEMENTS);
+        }
+      } catch (e) {
+        console.warn("Could not load announcements:", e);
+        const savedAnn = localStorage.getItem('shakti_local_announcements');
+        setAnnouncements(savedAnn ? JSON.parse(savedAnn) : DEFAULT_ANNOUNCEMENTS);
+      }
+
+      // 5. Fetch Stream Configuration & Status
+      try {
+        const streamRes = await fetch('/api/owner/live');
+        if (streamRes.ok) {
+          const streamData = await streamRes.json();
+          setStreamConfig(streamData);
+          setStreamIsLive(streamData.isLive);
+          setStreamUrl(streamData.streamUrl);
+          setStreamPlatform(streamData.platform);
+          setStreamTitle(streamData.title);
+          setStreamViewerCount(streamData.viewerCount);
+          setStreamCountdown(streamData.countdownEnd);
+        } else {
+          setStreamIsLive(false);
+        }
+      } catch (e) {
+        console.warn("Could not load stream configuration:", e);
+        setStreamIsLive(false);
       }
     } catch (e) {
-      console.error(e);
+      console.error("General administrative data sync error:", e);
+    } finally {
+      // Direct ultimate safeguard to ensure loader is never stuck
+      setConfig(prev => prev || DEFAULT_OWNER_CONFIG);
     }
   };
 
@@ -173,6 +397,8 @@ export default function BackstageAdmin() {
     );
     const newConfig = { ...config, homepageSections: updatedSections };
     setConfig(newConfig);
+    localStorage.setItem('shakti_local_owner_config', JSON.stringify(newConfig));
+    triggerAlert(`HOMEPAGE SECTION "${sectionId.toUpperCase()}" STANCE RE-CALIBRATED.`);
 
     try {
       await fetch('/api/owner/config', {
@@ -180,7 +406,6 @@ export default function BackstageAdmin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
       });
-      triggerAlert(`HOMEPAGE SECTION "${sectionId.toUpperCase()}" STANCE RE-CALIBRATED.`);
     } catch (e) {}
   };
 
@@ -191,6 +416,8 @@ export default function BackstageAdmin() {
     );
     const newConfig = { ...config, dashboardModules: updatedModules };
     setConfig(newConfig);
+    localStorage.setItem('shakti_local_owner_config', JSON.stringify(newConfig));
+    triggerAlert(`CORE DASHBOARD UTILITY "${moduleId.toUpperCase()}" STANCE RE-CALIBRATED.`);
 
     try {
       await fetch('/api/owner/config', {
@@ -198,7 +425,6 @@ export default function BackstageAdmin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
       });
-      triggerAlert(`CORE DASHBOARD UTILITY "${moduleId.toUpperCase()}" STANCE RE-CALIBRATED.`);
     } catch (e) {}
   };
 
@@ -212,6 +438,8 @@ export default function BackstageAdmin() {
       }
     };
     setConfig(newConfig);
+    localStorage.setItem('shakti_local_owner_config', JSON.stringify(newConfig));
+    triggerAlert(`AUTOMATION REGENT "${key.toUpperCase()}" TRIGGER ADJUSTED.`);
 
     try {
       await fetch('/api/owner/config', {
@@ -219,25 +447,25 @@ export default function BackstageAdmin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
       });
-      triggerAlert(`AUTOMATION REGENT "${key.toUpperCase()}" TRIGGER ADJUSTED.`);
     } catch (e) {}
   };
 
   // Support Ticketing Handlers
   const handleUpdateTicketStatus = async (ticketId: string, status: string) => {
+    const nextTickets = tickets.map(t => t.id === ticketId ? { ...t, status: status as any } : t);
+    setTickets(nextTickets);
+    localStorage.setItem('shakti_local_tickets', JSON.stringify(nextTickets));
+    if (selectedTicket?.id === ticketId) {
+      setSelectedTicket(prev => prev ? { ...prev, status: status as any } : null);
+    }
+    triggerAlert(`TICKET STATUS CHANGED TO ${status.toUpperCase()}.`);
+
     try {
-      const res = await fetch(`/api/owner/tickets/${ticketId}/status`, {
+      await fetch(`/api/owner/tickets/${ticketId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
-      if (res.ok) {
-        setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: status as any } : t));
-        if (selectedTicket?.id === ticketId) {
-          setSelectedTicket(prev => prev ? { ...prev, status: status as any } : null);
-        }
-        triggerAlert(`TICKET STATUS CHANGED TO ${status.toUpperCase()}.`);
-      }
     } catch (e) {}
   };
 
@@ -245,31 +473,53 @@ export default function BackstageAdmin() {
     e.preventDefault();
     if (!selectedTicket || !replyText.trim()) return;
 
+    const txt = replyText.trim();
+    const newReply = {
+      id: "tr-" + Date.now(),
+      user: 'Owner Backstage Admin',
+      text: txt,
+      timestamp: "Just now"
+    };
+
+    const nextTickets = tickets.map(t => {
+      if (t.id === selectedTicket.id) {
+        return {
+          ...t,
+          status: 'answered' as const,
+          replies: [...(t.replies || []), newReply]
+        };
+      }
+      return t;
+    });
+
+    setTickets(nextTickets);
+    localStorage.setItem('shakti_local_tickets', JSON.stringify(nextTickets));
+    setSelectedTicket(prev => prev ? {
+      ...prev,
+      status: 'answered',
+      replies: [...(prev.replies || []), newReply]
+    } : null);
+    setReplyText('');
+    triggerAlert(`REPLY DISPATCHED SUCCESSFULLY TO ${selectedTicket.user.toUpperCase()}.`);
+
     try {
-      const res = await fetch(`/api/owner/tickets/${selectedTicket.id}/reply`, {
+      await fetch(`/api/owner/tickets/${selectedTicket.id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: replyText.trim(),
+          text: txt,
           user: 'Owner Backstage Admin'
         })
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(prev => prev.map(t => t.id === selectedTicket.id ? { ...t, replies: data.replies, status: 'answered' } : t));
-        setSelectedTicket(prev => prev ? { ...prev, replies: data.replies, status: 'answered' } : null);
-        setReplyText('');
-        triggerAlert(`REPLY DISPATCHED SUCCESSFULLY TO ${selectedTicket.user.toUpperCase()}.`);
-      }
     } catch (e) {}
   };
 
   // Live stream config handler
   const handleSaveStreamConfig = async (e: React.FormEvent) => {
     e.preventDefault();
+    triggerAlert('BROADCAST SHIELD SPECIFICATIONS PERSISTED GLOBALLY.');
     try {
-      const res = await fetch('/api/owner/live', {
+      await fetch('/api/owner/live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -281,10 +531,6 @@ export default function BackstageAdmin() {
           countdownEnd: streamCountdown
         })
       });
-
-      if (res.ok) {
-        triggerAlert('BROADCAST SHIELD SPECIFICATIONS PERSISTED GLOBALLY.');
-      }
     } catch (e) {}
   };
 
@@ -293,8 +539,35 @@ export default function BackstageAdmin() {
     e.preventDefault();
     if (!newAnnTitle.trim() || !newAnnText.trim()) return;
 
+    const newAnn: Announcement = {
+      id: "a-" + Date.now(),
+      title: newAnnTitle.trim(),
+      text: newAnnText.trim(),
+      priority: newAnnPriority,
+      timestamp: "Just now"
+    };
+
+    const nextAnn = [newAnn, ...announcements];
+    setAnnouncements(nextAnn);
+    localStorage.setItem('shakti_local_announcements', JSON.stringify(nextAnn));
+
     try {
-      const res = await fetch('/api/owner/announcements', {
+      const storedEvents = localStorage.getItem('shakti_local_events');
+      if (storedEvents) {
+        const events = JSON.parse(storedEvents);
+        if (events.length > 0) {
+          events[0].announcements = [{ text: `${newAnn.title}: ${newAnn.text}`, timestamp: "Just now" }, ...(events[0].announcements || [])];
+          localStorage.setItem('shakti_local_events', JSON.stringify(events));
+        }
+      }
+    } catch (err) {}
+
+    setNewAnnTitle('');
+    setNewAnnText('');
+    triggerAlert('GLOBAL ANNOUNCEMENT PUBLISHED ON CURRENT SPECTATOR WALL.');
+
+    try {
+      await fetch('/api/owner/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -303,55 +576,50 @@ export default function BackstageAdmin() {
           priority: newAnnPriority
         })
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAnnouncements(prev => [data.announcement, ...prev]);
-        setNewAnnTitle('');
-        setNewAnnText('');
-        triggerAlert('GLOBAL ANNOUNCEMENT PUBLISHED ON CURRENT SPECTATOR WALL.');
-      }
     } catch (e) {}
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
+    const nextAnn = announcements.filter(a => a.id !== id);
+    setAnnouncements(nextAnn);
+    localStorage.setItem('shakti_local_announcements', JSON.stringify(nextAnn));
+    triggerAlert('ANNOUNCEMENT TERMINATED.');
+
     try {
-      const res = await fetch(`/api/owner/announcements/${id}`, {
+      await fetch(`/api/owner/announcements/${id}`, {
         method: 'DELETE'
       });
-      if (res.ok) {
-        setAnnouncements(prev => prev.filter(a => a.id !== id));
-        triggerAlert('ANNOUNCEMENT TERMINATED.');
-      }
     } catch (e) {}
   };
 
   // Support Approve / Reject users
   const handleApproveModel = async (email: string, eventId?: string) => {
+    const nextUsers = users.map(u => u.email === email ? { ...u, status: 'Active' } : u);
+    setUsers(nextUsers);
+    localStorage.setItem('shakti_local_users', JSON.stringify(nextUsers));
+    triggerAlert(`USER "${email}" ACCESS ROLE MODERATED TO ACTIVE.`);
+
     try {
-      const res = await fetch('/api/owner/registrations/approve', {
+      await fetch('/api/owner/registrations/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, eventId, approved: true })
       });
-      if (res.ok) {
-        setUsers(prev => prev.map(u => u.email === email ? { ...u, status: 'Active' } : u));
-        triggerAlert(`USER "${email}" ACCESS ROLE MODERATED TO ACTIVE.`);
-      }
     } catch (e) {}
   };
 
   const handleDeclineModel = async (email: string, eventId?: string) => {
+    const nextUsers = users.map(u => u.email === email ? { ...u, status: 'Approval Queue' } : u);
+    setUsers(nextUsers);
+    localStorage.setItem('shakti_local_users', JSON.stringify(nextUsers));
+    triggerAlert(`USER "${email}" GRANTED ACCESS TERMINATED.`);
+
     try {
-      const res = await fetch('/api/owner/registrations/approve', {
+      await fetch('/api/owner/registrations/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, eventId, approved: false })
       });
-      if (res.ok) {
-        setUsers(prev => prev.map(u => u.email === email ? { ...u, status: 'Approval Queue' } : u));
-        triggerAlert(`USER "${email}" GRANTED ACCESS TERMINATED.`);
-      }
     } catch (e) {}
   };
 

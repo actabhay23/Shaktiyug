@@ -48,13 +48,15 @@ function Bokeh() {
   );
 }
 
-export default function BackgroundEffect() {
+export default function BackgroundEffect({ active = true }: { active?: boolean }) {
   return (
     <div className="fixed inset-0 -z-10 bg-shakti-black">
-      <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
-        <ambientLight intensity={0.8} />
-        <Bokeh />
-      </Canvas>
+      {active && (
+        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+          <ambientLight intensity={0.8} />
+          <Bokeh />
+        </Canvas>
+      )}
       <div className="cinematic-vignette opacity-80" />
       <div className="film-grain" />
     </div>
